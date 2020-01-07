@@ -1,0 +1,45 @@
+--- /usr/local/go/src/net/http/transport.go	2020-01-07 10:17:38.994508200 +0000
++++ /usr/local/go/src/net/http/transport.go	2019-11-13 01:04:14.644094100 +0000
+@@ -32,6 +32,7 @@
+ 
+ 	"golang.org/x/net/http/httpguts"
+ 	"golang.org/x/net/http/httpproxy"
++	"golang.org/x/time/rate"
+ )
+ 
+ // DefaultTransport is the default implementation of Transport and is
+@@ -196,6 +197,8 @@
+ 	// Zero means no limit.
+ 	MaxConnsPerHost int
+ 
++	MaxConnectionRate rate.Limiter
++
+ 	// IdleConnTimeout is the maximum amount of time an idle
+ 	// (keep-alive) connection will remain idle before closing
+ 	// itself.
+@@ -293,6 +296,7 @@
+ 		MaxIdleConns:           t.MaxIdleConns,
+ 		MaxIdleConnsPerHost:    t.MaxIdleConnsPerHost,
+ 		MaxConnsPerHost:        t.MaxConnsPerHost,
++		MaxConnectionRate:		t.MaxConnectionRate,
+ 		IdleConnTimeout:        t.IdleConnTimeout,
+ 		ResponseHeaderTimeout:  t.ResponseHeaderTimeout,
+ 		ExpectContinueTimeout:  t.ExpectContinueTimeout,
+@@ -1209,6 +1213,9 @@
+ 		}
+ 	}()
+ 
++	// paverma: Either connection rate limiter is not defined or we have already reached the limit for creating new connections.
++	if t.MaxConnectionRate == (rate.Limiter{}) || t.MaxConnectionRate.Allow() == false {
++
+ 	// Queue for idle connection.
+ 	if delivered := t.queueForIdleConn(w); delivered {
+ 		pc := w.pc
+@@ -1223,6 +1230,7 @@
+ 		t.setReqCanceler(req, func(error) {})
+ 		return pc, nil
+ 	}
++	}
+ 
+ 	cancelc := make(chan error, 1)
+ 	t.setReqCanceler(req, func(err error) { cancelc <- err })

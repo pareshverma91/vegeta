@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"golang.org/x/net/http2"
+	"golang.org/x/time/rate"
 )
 
 // Attacker is an attack executor which wraps an http.Client
@@ -218,6 +219,17 @@ func H2C(enabled bool) func(*Attacker) {
 // read from response bodies. Set to -1 to disable any limits.
 func MaxBody(n int64) func(*Attacker) {
 	return func(a *Attacker) { a.maxBody = n }
+}
+
+
+// paverma: Sets the connection rate limiter.
+func MaxConnectionRate(n int) func(*Attacker) {
+	return func(a *Attacker) {
+		tr := a.client.Transport.(*http.Transport)
+		if n > 0 {
+			tr.MaxConnectionRate = *rate.NewLimiter(rate.Limit(n), n)
+		}
+	}
 }
 
 // UnixSocket changes the dialer for the attacker to use the specified unix socket file

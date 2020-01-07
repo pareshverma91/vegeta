@@ -49,6 +49,7 @@ func attackCmd() command {
 	fs.IntVar(&opts.connections, "connections", vegeta.DefaultConnections, "Max open idle connections per target host")
 	fs.IntVar(&opts.redirects, "redirects", vegeta.DefaultRedirects, "Number of redirects to follow. -1 will not follow but marks as success")
 	fs.Var(&maxBodyFlag{&opts.maxBody}, "max-body", "Maximum number of bytes to capture from response bodies. [-1 = no limit]")
+	fs.IntVar(&opts.maxConnectionRate, "max-connection-rate", 0, "Maximum number of connections to target host")
 	fs.Var(&rateFlag{&opts.rate}, "rate", "Number of requests per time unit [0 = infinity]")
 	fs.Var(&opts.headers, "header", "Request header")
 	fs.Var(&opts.proxyHeaders, "proxy-header", "Proxy CONNECT header")
@@ -91,6 +92,7 @@ type attackOpts struct {
 	connections  int
 	redirects    int
 	maxBody      int64
+	maxConnectionRate int
 	headers      headers
 	proxyHeaders headers
 	laddr        localAddr
@@ -182,6 +184,7 @@ func attack(opts *attackOpts) (err error) {
 		vegeta.HTTP2(opts.http2),
 		vegeta.H2C(opts.h2c),
 		vegeta.MaxBody(opts.maxBody),
+		vegeta.MaxConnectionRate(opts.maxConnectionRate),
 		vegeta.UnixSocket(opts.unixSocket),
 		vegeta.ProxyHeader(proxyHdr),
 		vegeta.ChunkedBody(opts.chunked),
